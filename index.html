@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#241d18" />
+    <title>Меню на память</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Prata&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <button class="brand" data-view="library" aria-label="На главную">
+          <span class="brand-mark">м</span>
+          <span>меню <i>на память</i></span>
+        </button>
+        <nav>
+          <button class="nav-link active" data-view="library">Библиотека</button>
+          <button class="nav-link" data-view="stats">Статистика</button>
+        </nav>
+        <button class="icon-button" id="themeToggle" aria-label="Переключить тему">☼</button>
+      </header>
+
+      <main>
+        <section id="libraryView" class="view active">
+          <div class="hero">
+            <div>
+              <p class="eyebrow">Тренажёр состава блюд</p>
+              <h1>Знай меню.<br /><em>Не зубри.</em></h1>
+              <p class="hero-copy">Загрузите базу рецептов и тренируйте составы — от блюда до последнего соуса.</p>
+            </div>
+            <div class="hero-number" aria-hidden="true"><span id="heroCount">0</span><small>блюд<br />в базе</small></div>
+          </div>
+
+          <section class="panel import-panel">
+            <div class="panel-title-row">
+              <div><p class="eyebrow">01 / База</p><h2>Добавьте рецепты</h2></div>
+              <button class="text-button danger hidden" id="clearLibrary">Очистить</button>
+            </div>
+            <div class="dropzone" id="dropzone">
+              <div class="drop-icon">↗</div>
+              <div><strong>Перетащите сюда .md-файлы</strong><span>или выберите файлы / целую папку</span></div>
+              <div class="drop-actions">
+                <button class="button secondary" id="pickFiles">Выбрать файлы</button>
+                <button class="button ghost" id="pickFolder">Выбрать папку</button>
+              </div>
+              <input id="fileInput" type="file" accept=".md,text/markdown" multiple hidden />
+              <input id="folderInput" type="file" accept=".md,text/markdown" webkitdirectory multiple hidden />
+            </div>
+            <div id="importSummary" class="import-summary"></div>
+
+            <div id="databaseBrowser" class="database-browser hidden">
+              <div class="database-toolbar">
+                <div>
+                  <p class="eyebrow">Содержимое базы</p>
+                  <h3>Загруженные блюда</h3>
+                </div>
+                <label class="search-field">
+                  <span aria-hidden="true">⌕</span>
+                  <input id="recipeSearch" type="search" placeholder="Найти блюдо…" autocomplete="off" />
+                </label>
+              </div>
+              <div class="selection-bar">
+                <span id="selectionCount">Ничего не выбрано</span>
+                <div>
+                  <button class="text-button" id="selectVisibleRecipes">Выбрать найденные</button>
+                  <button class="text-button hidden" id="clearRecipeSelection">Снять выбор</button>
+                  <button class="button weak" id="startSelected" disabled>Повторить выбранные</button>
+                </div>
+              </div>
+              <div id="recipeList" class="recipe-list"></div>
+              <p id="recipeListEmpty" class="list-empty hidden">По этому запросу ничего не найдено.</p>
+            </div>
+          </section>
+
+          <section class="training-setup">
+            <div class="section-heading"><p class="eyebrow">02 / Тренировка</p><h2>Настройте подход</h2></div>
+            <div class="setup-grid">
+              <div class="panel categories-panel">
+                <div class="control-label"><span>Категории</span><button id="toggleCategories">Снять все</button></div>
+                <div id="categoryFilters" class="chips"><span class="empty-note">Сначала загрузите рецепты</span></div>
+              </div>
+              <div class="panel options-panel">
+                <label class="switch-row"><span><strong>Показывать количество</strong><small>Сколько ингредиентов осталось</small></span><input id="showCount" type="checkbox" checked /><i></i></label>
+                <label class="switch-row"><span><strong>Считать ошибки</strong><small>Для статистики сложных позиций</small></span><input id="countErrors" type="checkbox" checked /><i></i></label>
+              </div>
+            </div>
+            <div class="start-row">
+              <button class="button primary" id="startRandom" disabled><span>Начать случайное блюдо</span><b>→</b></button>
+              <button class="button weak" id="startWeak" disabled>Повторить сложное</button>
+            </div>
+          </section>
+        </section>
+
+        <section id="quizView" class="view">
+          <button class="back-button" id="exitQuiz">← Завершить тренировку</button>
+          <div class="quiz-layout">
+            <div class="quiz-main">
+              <p class="eyebrow" id="stageLabel">Состав блюда</p>
+              <h1 id="quizTitle"></h1>
+              <div id="breadcrumbs" class="breadcrumbs"></div>
+              <div class="progress-meta">
+                <span id="progressText"></span>
+                <span id="errorText"></span>
+              </div>
+              <div class="progress-track"><i id="progressBar"></i></div>
+              <form id="answerForm" autocomplete="off">
+                <label for="answerInput">Введите ингредиент</label>
+                <div class="answer-wrap">
+                  <input id="answerInput" type="text" placeholder="Например, томаты…" autofocus />
+                  <button type="submit" aria-label="Проверить">↵</button>
+                </div>
+                <p id="feedback" class="feedback" aria-live="polite">Порядок слов и знаки не важны; «перец» и «сыр» можно не писать</p>
+              </form>
+              <button id="revealAnswer" class="text-button reveal">Не помню — показать один ответ</button>
+            </div>
+            <aside class="answers-panel">
+              <div class="answers-head"><span>Найдено</span><b id="foundCount">0 / 0</b></div>
+              <div id="answerList" class="answer-list"></div>
+            </aside>
+          </div>
+        </section>
+
+        <section id="statsView" class="view">
+          <div class="stats-hero"><div><p class="eyebrow">Прогресс</p><h1>Где уже уверенно,<br /><em>а где повторить</em></h1></div><div class="stats-actions"><button class="button weak" id="repeatAllErrors" disabled>Повторить все ошибки</button><button class="text-button danger" id="resetStats">Сбросить статистику</button></div></div>
+          <div id="statsCards" class="stat-cards"></div>
+          <div class="panel stats-table-wrap">
+            <table><thead><tr><th>Блюдо</th><th>Подходы</th><th>Ошибки</th><th>Результат</th><th></th></tr></thead><tbody id="statsTable"></tbody></table>
+            <div id="statsEmpty" class="empty-state">Здесь появятся результаты после первой тренировки.</div>
+          </div>
+        </section>
+
+        <section id="completeView" class="view complete-view">
+          <div class="complete-mark">✓</div>
+          <p class="eyebrow">Тренировка завершена</p>
+          <h1 id="completeTitle"></h1>
+          <div id="completeMetrics" class="complete-metrics"></div>
+          <div class="complete-actions"><button class="button primary" id="nextDish">Следующее блюдо <b>→</b></button><button class="button secondary" data-view="stats">Посмотреть статистику</button></div>
+        </section>
+      </main>
+      <footer><span>Файлы остаются в вашем браузере</span><span>Markdown · локальное хранение</span></footer>
+    </div>
+    <script type="module" src="app.js"></script>
+  </body>
+</html>

@@ -1,0 +1,11 @@
+{
+  "name": "lernmenu",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "stop": "node stop-server.js",
+    "test": "node --test"
+  }
+}
