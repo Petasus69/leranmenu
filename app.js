@@ -321,8 +321,22 @@ function finishSession() {
   const nextLabel = $("#nextDish span");
   if (practiceMode && practiceQueue.length) nextLabel.textContent = `Следующее блюдо · осталось ${practiceQueue.length}`;
   else if (practiceMode) nextLabel.textContent = "Завершить подборку";
-  else nextLabel.textContent = "Следующее блюдо";
+  else nextLabel.textContent = eligibleRecipes().length ? "Следующее блюдо" : "Вернуться в библиотеку";
   showView("complete");
+}
+
+function advancePracticeBatch() {
+  while (practiceQueue.length) {
+    const nextId = practiceQueue.shift();
+    const nextRecipe = recipes.find((recipe) => recipe.id === nextId && isDish(recipe) && recipe.ingredients.length);
+    if (nextRecipe) {
+      startRecipe(nextRecipe, true);
+      return;
+    }
+  }
+  practiceMode = null;
+  practiceQueue = [];
+  showView("library");
 }
 
 function renderStats() {
@@ -393,20 +407,18 @@ function wireEvents() {
   });
   $("#showCount").addEventListener("change", (event) => { prefs.showCount = event.target.checked; persist(PREFS_KEY, prefs); });
   $("#countErrors").addEventListener("change", (event) => { prefs.countErrors = event.target.checked; persist(PREFS_KEY, prefs); });
-  $("#startRandom").addEventListener("click", () => startRecipe(randomItem(eligibleRecipes())));
+  $("#startRandom").addEventListener("click", () => startBatch(eligibleRecipes(), "categories"));
   $("#startWeak").addEventListener("click", () => startRecipe(selectWeakRecipe(eligibleRecipes(), stats)));
   $("#answerForm").addEventListener("submit", submitAnswer);
   $("#revealAnswer").addEventListener("click", revealOne);
   $("#exitQuiz").addEventListener("click", () => { session = null; practiceMode = null; practiceQueue = []; showView("library"); });
   $("#nextDish").addEventListener("click", () => {
-    if (practiceMode && practiceQueue.length) {
-      const nextId = practiceQueue.shift();
-      startRecipe(recipes.find((recipe) => recipe.id === nextId), true);
-    } else if (practiceMode) {
-      practiceMode = null;
-      practiceQueue = [];
-      showView("library");
-    } else startRecipe(randomItem(eligibleRecipes()));
+    if (practiceMode) advancePracticeBatch();
+    else {
+      const available = eligibleRecipes();
+      if (available.length) startRecipe(randomItem(available));
+      else showView("library");
+    }
   });
   $("#repeatAllErrors").addEventListener("click", () => {
     const failed = recipes.filter((recipe) => isDish(recipe) && recipe.ingredients.length && (stats[recipe.id]?.errors || 0) > 0).sort((a, b) => stats[b.id].errors - stats[a.id].errors);

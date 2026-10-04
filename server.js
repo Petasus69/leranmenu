@@ -8,6 +8,7 @@ const root = process.cwd();
 const port = Number(process.env.PORT || 4173);
 const stateFile = join(root, ".lernmenu-server.json");
 const shutdownToken = randomUUID();
+let ownsStateFile = false;
 const types = {
   ".html": "text/html; charset=utf-8",
   ".js": "text/javascript; charset=utf-8",
@@ -54,11 +55,13 @@ server.on("error", (error) => {
 
 server.listen(port, "127.0.0.1", () => {
   writeFileSync(stateFile, JSON.stringify({ port, token: shutdownToken }), "utf8");
+  ownsStateFile = true;
   console.log(`Lernmenu: http://127.0.0.1:${port}`);
   console.log("Для остановки нажмите Ctrl+C или выполните npm stop в другом терминале.");
 });
 
 function cleanup() {
+  if (!ownsStateFile) return;
   try { unlinkSync(stateFile); } catch { /* Файл уже удалён или не был создан. */ }
 }
 
