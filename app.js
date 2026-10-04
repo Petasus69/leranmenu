@@ -159,7 +159,7 @@ function startRecipe(recipe, keepPracticeQueue = false) {
   }
   const plan = buildStagePlan(recipe, recipes);
   if (!plan) return;
-  session = { root: recipe, frames: [makeFrame(plan)], totalStages: countPlanNodes(plan), completedStages: 0, errors: 0, correct: 0 };
+  session = { root: recipe, frames: [makeFrame(plan)], pendingNodes: [], totalStages: countPlanNodes(plan), completedStages: 0, errors: 0, correct: 0 };
   const item = stats[recipe.id] ||= { attempts: 0, completed: 0, errors: 0, correct: 0, ingredients: {} };
   item.attempts += 1;
   persist(STATS_KEY, stats);
@@ -168,7 +168,7 @@ function startRecipe(recipe, keepPracticeQueue = false) {
 }
 
 function makeFrame(node) {
-  return { node, guessed: new Set(), revealed: new Set(), pendingErrors: 0, pendingChildren: [] };
+  return { node, guessed: new Set(), revealed: new Set(), pendingErrors: 0 };
 }
 
 function countPlanNodes(node) {
@@ -181,8 +181,8 @@ function currentStage() { return currentFrame()?.node; }
 function renderStage() {
   const stage = currentStage();
   if (!stage) return finishSession();
-  const isRoot = session.frames.length === 1;
-  $("#stageLabel").textContent = isRoot ? "Основной состав" : `Внутренний состав · уровень ${session.frames.length}`;
+  const isRoot = stage.breadcrumb.length === 1;
+  $("#stageLabel").textContent = isRoot ? "Основной состав" : `Внутренний состав · уровень ${stage.breadcrumb.length}`;
   $("#quizTitle").textContent = stage.recipe.name;
   $("#breadcrumbs").innerHTML = stage.breadcrumb.map((item) => `<span>${escapeHtml(item)}</span>`).join("");
   $("#answerInput").value = "";
@@ -286,22 +286,7 @@ function revealOne() {
   continueAfterIngredient(next);
 }
 
-function continueAfterIngredient(ingredient) {
-  const stage = currentStage();
-  const frame = currentFrame();
-  const index = stage.recipe.ingredients.indexOf(ingredient);
-  const children = stage.children[index] || [];
-  if (children.length) {
-    frame.pendingChildren.push(...children.slice(1));
-    $("#answerInput").disabled = true;
-    const activeSession = session;
-    setTimeout(() => {
-      if (session !== activeSession) return;
-      session.frames.push(makeFrame(children[0]));
-      renderStage();
-    }, 650);
-    return;
-  }
+function continueAfterIngredient() {
   advanceIfComplete();
 }
 
@@ -315,14 +300,15 @@ function advanceIfComplete() {
 }
 
 function completeCurrentStage() {
+  const completedFrame = currentFrame();
+  const nestedStages = completedFrame.node.children.flat();
   session.completedStages += 1;
   session.frames.pop();
-  if (!session.frames.length) return finishSession();
-  const parent = currentFrame();
-  const deferred = parent.pendingChildren.shift();
-  if (deferred) session.frames.push(makeFrame(deferred));
+  session.pendingNodes = [...nestedStages, ...session.pendingNodes];
+  const next = session.pendingNodes.shift();
+  if (!next) return finishSession();
+  session.frames.push(makeFrame(next));
   renderStage();
-  if (!deferred) advanceIfComplete();
 }
 
 function finishSession() {

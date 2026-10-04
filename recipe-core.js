@@ -198,16 +198,27 @@ export function buildStagePlan(rootRecipe, recipes) {
   const buildNode = (recipe, breadcrumb) => {
     if (!recipe?.ingredients.length || visited.has(recipe.id)) return null;
     visited.add(recipe.id);
-    const node = { recipe, breadcrumb, children: recipe.ingredients.map(() => []) };
-    recipe.ingredients.forEach((ingredient, index) => {
+    const flattened = [];
+    const flattenedByKey = new Map();
+    const appendIngredient = (ingredient) => {
+      const existing = flattenedByKey.get(ingredient.key);
+      if (existing) existing.ref ||= ingredient.ref;
+      else {
+        const flatIngredient = { ...ingredient, children: [] };
+        flattenedByKey.set(ingredient.key, flatIngredient);
+        flattened.push(flatIngredient);
+      }
+      (ingredient.children || []).forEach(appendIngredient);
+    };
+    recipe.ingredients.forEach(appendIngredient);
+    const stageRecipe = flattened.length === recipe.ingredients.length && recipe.ingredients.every((item) => !item.children?.length)
+      ? recipe
+      : { ...recipe, ingredients: flattened };
+    const node = { recipe: stageRecipe, breadcrumb, children: flattened.map(() => []) };
+    flattened.forEach((ingredient, index) => {
       if (ingredient.ref) {
         const nested = byName.get(normalizeAnswer(ingredient.ref));
         const child = buildNode(nested, [...breadcrumb, nested?.name || ingredient.name]);
-        if (child) node.children[index].push(child);
-      }
-      if (ingredient.children?.length) {
-        const nested = { id: `${recipe.id}::${ingredient.key}:${index}`, name: ingredient.name, filename: recipe.filename, categories: recipe.categories, selectable: false, ingredients: ingredient.children };
-        const child = buildNode(nested, [...breadcrumb, ingredient.name]);
         if (child) node.children[index].push(child);
       }
     });

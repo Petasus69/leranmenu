@@ -47,22 +47,23 @@ test("splits a file containing several menu positions", () => {
   assert.deepEqual(recipes.map((recipe) => recipe.ingredients.length), [1, 1, 0]);
 });
 
-test("keeps indented ingredients as arbitrary-depth stages", () => {
+test("promotes indented ingredients into the same composition", () => {
   const recipe = parseRecipe({
     filename: "Карри.md",
     text: "### Состав\n- Соус\n\t- Паста\n\t\t- Перец\n- Рис"
   });
   const stages = buildStages(recipe, [recipe]);
-  assert.deepEqual(stages.map((stage) => stage.recipe.name), ["Карри", "Соус", "Паста"]);
-  assert.deepEqual(stages.map((stage) => stage.recipe.ingredients.map((item) => item.name)), [["Соус", "Рис"], ["Паста"], ["Перец"]]);
+  assert.deepEqual(stages.map((stage) => stage.recipe.name), ["Карри"]);
+  assert.deepEqual(stages[0].recipe.ingredients.map((item) => item.name), ["Соус", "Паста", "Перец", "Рис"]);
 });
 
-test("attaches every nested composition to the ingredient that opens it", () => {
-  const dish = parseRecipe({ filename: "Блюдо.md", text: "### Состав\n- Соус\n  - Специи\n    - Корица\n- Рис" });
-  const plan = buildStagePlan(dish, [dish]);
+test("opens linked compositions only as stages after the parent composition", () => {
+  const dish = parseRecipe({ filename: "Блюдо.md", text: "### Состав\n- [[Соус]]\n  - Украшение\n- Рис" });
+  const sauce = parseRecipe({ filename: "Соус.md", path: "ОпределенияCey/Соус.md", text: "### Состав\n- Специи\n  - Корица\n- Соль" });
+  const plan = buildStagePlan(dish, [dish, sauce]);
+  assert.deepEqual(plan.recipe.ingredients.map((item) => item.name), ["Соус", "Украшение", "Рис"]);
   assert.equal(plan.children[0][0].recipe.name, "Соус");
-  assert.equal(plan.children[0][0].children[0][0].recipe.name, "Специи");
-  assert.deepEqual(plan.children[1], []);
+  assert.deepEqual(plan.children[0][0].recipe.ingredients.map((item) => item.name), ["Специи", "Корица", "Соль"]);
 });
 
 test("marks definition folders as components and deduplicates ingredients", () => {
