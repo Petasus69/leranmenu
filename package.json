@@ -6,6 +6,15 @@
   "scripts": {
     "start": "node server.js",
     "stop": "node stop-server.js",
-    "test": "node --test"
+    "test": "node --test",
+    "build:mobile": "node build-mobile.js",
+    "android:sync": "npm run build:mobile && cap sync android",
+    "android:open": "npm run android:sync && cap open android",
+    "android:apk": "npm run android:sync && cd android && gradlew.bat assembleDebug"
+  },
+  "dependencies": {
+    "@capacitor/android": "8.5.2",
+    "@capacitor/cli": "8.5.2",
+    "@capacitor/core": "8.5.2"
   }
 }

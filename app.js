@@ -187,6 +187,7 @@ function renderStage() {
   $("#breadcrumbs").innerHTML = stage.breadcrumb.map((item) => `<span>${escapeHtml(item)}</span>`).join("");
   $("#answerInput").value = "";
   $("#answerInput").disabled = false;
+  $("#knowStage").classList.toggle("hidden", isRoot);
   $("#feedback").textContent = "Порядок слов и знаки не важны; «перец» и «сыр» можно не писать";
   $("#feedback").className = "feedback";
   renderAnswers();
@@ -202,10 +203,17 @@ function renderAnswers() {
   $("#progressText").textContent = prefs.showCount ? `Найдено ${done} из ${total}` : done === total ? "Состав завершён" : "Вспоминайте состав";
   $("#errorText").textContent = prefs.countErrors ? `Ошибок: ${session.errors}` : "";
   $("#progressBar").style.width = `${total ? done / total * 100 : 0}%`;
-  $("#answerList").innerHTML = stage.recipe.ingredients.map((ingredient) => {
+  $("#answerList").innerHTML = renderAnswerTree(stage.displayIngredients || stage.recipe.ingredients, frame);
+}
+
+function renderAnswerTree(ingredients, frame) {
+  return ingredients.map((ingredient) => {
     const found = frame.guessed.has(ingredient.key);
     const revealed = frame.revealed.has(ingredient.key);
-    return `<div class="answer-item ${found ? "found" : ""} ${revealed ? "revealed" : ""}">${found || revealed ? escapeHtml(ingredient.name) : "скрыто"}</div>`;
+    const children = ingredient.children?.length
+      ? `<div class="answer-children">${renderAnswerTree(ingredient.children, frame)}</div>`
+      : "";
+    return `<div class="answer-node"><div class="answer-item ${found ? "found" : ""} ${revealed ? "revealed" : ""}">${found || revealed ? escapeHtml(ingredient.name) : "скрыто"}</div>${children}</div>`;
   }).join("");
 }
 
@@ -286,6 +294,22 @@ function revealOne() {
   continueAfterIngredient(next);
 }
 
+function knowCurrentStage() {
+  const stage = currentStage();
+  const frame = currentFrame();
+  if (!stage || stage.breadcrumb.length === 1) return;
+  const remaining = stage.recipe.ingredients.filter((item) => !frame.guessed.has(item.key) && !frame.revealed.has(item.key));
+  if (!remaining.length) return;
+  remaining.forEach((item) => frame.guessed.add(item.key));
+  frame.pendingErrors = 0;
+  session.correct += remaining.length;
+  stats[session.root.id].correct += remaining.length;
+  persist(STATS_KEY, stats);
+  flash("good", `Состав отмечен как известный: ${remaining.length}`);
+  renderAnswers();
+  advanceIfComplete();
+}
+
 function continueAfterIngredient() {
   advanceIfComplete();
 }
@@ -357,6 +381,7 @@ function renderStats() {
 
 async function loadBundledSample() {
   if (recipes.length) return;
+  if (window.Capacitor?.isNativePlatform?.()) return;
   try {
     const filename = "Томаты кимчи с муссом из феты.md";
     const response = await fetch(encodeURI(filename));
@@ -369,7 +394,24 @@ async function loadBundledSample() {
 function wireEvents() {
   $$('[data-view]').forEach((button) => button.addEventListener("click", () => showView(button.dataset.view)));
   $("#pickFiles").addEventListener("click", () => $("#fileInput").click());
-  $("#pickFolder").addEventListener("click", () => $("#folderInput").click());
+  $("#pickFolder").addEventListener("click", async () => {
+    const nativePicker = window.Capacitor?.Plugins?.FolderPicker;
+    if (!nativePicker) {
+      $("#folderInput").click();
+      return;
+    }
+    try {
+      const result = await nativePicker.pickFolder();
+      const files = (result.files || []).map((file) => ({
+        name: file.name,
+        webkitRelativePath: file.path,
+        text: async () => file.text
+      }));
+      if (files.length) await importFiles(files);
+    } catch (error) {
+      renderLibrary(`<span class="danger">Не удалось прочитать папку: ${escapeHtml(error?.message || String(error))}</span>`);
+    }
+  });
   $("#fileInput").addEventListener("change", (event) => importFiles(event.target.files));
   $("#folderInput").addEventListener("change", (event) => importFiles(event.target.files));
   const dropzone = $("#dropzone");
@@ -411,6 +453,7 @@ function wireEvents() {
   $("#startWeak").addEventListener("click", () => startRecipe(selectWeakRecipe(eligibleRecipes(), stats)));
   $("#answerForm").addEventListener("submit", submitAnswer);
   $("#revealAnswer").addEventListener("click", revealOne);
+  $("#knowStage").addEventListener("click", knowCurrentStage);
   $("#exitQuiz").addEventListener("click", () => { session = null; practiceMode = null; practiceQueue = []; showView("library"); });
   $("#nextDish").addEventListener("click", () => {
     if (practiceMode) advancePracticeBatch();

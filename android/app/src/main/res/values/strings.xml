@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Меню на память</string>
+    <string name="title_activity_main">Меню на память</string>
+    <string name="package_name">ru.lernmenu.app</string>
+    <string name="custom_url_scheme">ru.lernmenu.app</string>
+</resources>

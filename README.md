@@ -16,6 +16,16 @@ npm start
 npm stop
 ```
 
+## Android
+
+Мобильная сборка работает автономно. Папка с базой Markdown выбирается пользователем на устройстве; содержимое `ceylon` в APK не встраивается:
+
+```powershell
+npm run android:apk
+```
+
+Готовый debug APK создаётся в `android/app/build/outputs/apk/debug/app-debug.apk`.
+
 ## Формат рецепта
 
 Название берётся из имени файла либо из `title` в YAML. Ингредиенты — маркированный список в разделе `### Состав`:

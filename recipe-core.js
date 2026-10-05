@@ -3,6 +3,13 @@ export function normalizeAnswer(value = "") {
 }
 
 const OPTIONAL_ANSWER_WORDS = new Set(["перец", "сыр"]);
+const ANSWER_ALIASES = new Map([
+  ["жареный карри порошок", new Set(["жкп"])]
+]);
+
+function compactAnswer(value = "") {
+  return value.toLocaleLowerCase("ru-RU").replace(/ё/g, "е").replace(/[^\p{L}\p{N}]+/gu, "");
+}
 
 function answerTokens(value) {
   const tokens = value
@@ -17,6 +24,8 @@ function answerTokens(value) {
 }
 
 export function answersMatch(input, expected) {
+  const aliases = ANSWER_ALIASES.get(normalizeAnswer(expected));
+  if (aliases?.has(compactAnswer(input))) return true;
   const actualTokens = answerTokens(input);
   const expectedTokens = answerTokens(expected);
   return actualTokens.length > 0 && actualTokens.length === expectedTokens.length && actualTokens.every((token, index) => token === expectedTokens[index]);
@@ -214,7 +223,7 @@ export function buildStagePlan(rootRecipe, recipes) {
     const stageRecipe = flattened.length === recipe.ingredients.length && recipe.ingredients.every((item) => !item.children?.length)
       ? recipe
       : { ...recipe, ingredients: flattened };
-    const node = { recipe: stageRecipe, breadcrumb, children: flattened.map(() => []) };
+    const node = { recipe: stageRecipe, displayIngredients: recipe.ingredients, breadcrumb, children: flattened.map(() => []) };
     flattened.forEach((ingredient, index) => {
       if (ingredient.ref) {
         const nested = byName.get(normalizeAnswer(ingredient.ref));

@@ -22,6 +22,12 @@ test("allows generic ingredient words to be omitted", () => {
   assert.equal(answersMatch("сыр", "Сыр"), true);
 });
 
+test("accepts abbreviations for fried curry powder", () => {
+  assert.equal(answersMatch("жкп", "Жареный карри порошок"), true);
+  assert.equal(answersMatch("Ж К П", "Жареный карри порошок"), true);
+  assert.equal(answersMatch("ж.к.п.", "Жареный карри порошок"), true);
+});
+
 test("extracts composition and wiki references", () => {
   const recipe = parseRecipe({ filename: "Блюдо.md", path: "Закуски/Блюдо.md", text: "Текст\n### Состав\n- [[Соус|Соус фирменный]]\n- *Кунжут*\n### Технология\n- не ингредиент" });
   assert.equal(recipe.name, "Блюдо");
@@ -55,6 +61,18 @@ test("promotes indented ingredients into the same composition", () => {
   const stages = buildStages(recipe, [recipe]);
   assert.deepEqual(stages.map((stage) => stage.recipe.name), ["Карри"]);
   assert.deepEqual(stages[0].recipe.ingredients.map((item) => item.name), ["Соус", "Паста", "Перец", "Рис"]);
+});
+
+test("keeps indented ingredients as a display tree while accepting them as answers", () => {
+  const recipe = parseRecipe({
+    filename: "Карри.md",
+    text: "### Состав\n- Специи\n  - Перец чили\n  - Листья карри\n  - [[Жареный карри порошок]]\n- Рис"
+  });
+  const powder = parseRecipe({ filename: "Жареный карри порошок.md", text: "### Состав\n- Кориандр" });
+  const plan = buildStagePlan(recipe, [recipe, powder]);
+  assert.deepEqual(plan.recipe.ingredients.map((item) => item.name), ["Специи", "Перец чили", "Листья карри", "Жареный карри порошок", "Рис"]);
+  assert.deepEqual(plan.displayIngredients[0].children.map((item) => item.name), ["Перец чили", "Листья карри", "Жареный карри порошок"]);
+  assert.equal(plan.children[3][0].recipe.name, "Жареный карри порошок");
 });
 
 test("opens linked compositions only as stages after the parent composition", () => {

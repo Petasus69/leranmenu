@@ -144,10 +144,15 @@ h3 { margin: 0; font-family: Prata, Georgia, serif; font-size: 23px; font-weight
 @keyframes shake { 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
 .feedback { height: 20px; color: var(--muted); font-size: 12px; }
 .feedback.good { color: var(--green); }.feedback.bad { color: var(--accent); }
-.reveal { margin-top: 20px; color: var(--muted); }
+.stage-actions { display: flex; align-items: center; gap: 18px; margin-top: 20px; }
+.reveal { color: var(--muted); }
+.know-stage { min-height: 38px; padding: 0 18px; }
 .answers-panel { border-left: 1px solid var(--line); padding-left: 30px; }
 .answers-head { display: flex; justify-content: space-between; padding-bottom: 15px; border-bottom: 1px solid var(--line); text-transform: uppercase; letter-spacing: .1em; font-size: 10px; }
 .answer-list { display: grid; margin-top: 8px; }
+.answer-node { min-width: 0; }
+.answer-children { margin-left: 9px; padding-left: 20px; border-left: 1px solid var(--line); }
+.answer-children .answer-item { min-height: 40px; font-size: 13px; }
 .answer-item { display: flex; align-items: center; gap: 12px; min-height: 45px; padding: 8px 0; border-bottom: 1px solid var(--line); color: transparent; user-select: none; }
 .answer-item::before { content: ""; width: 19px; height: 19px; border: 1px solid var(--line); border-radius: 50%; flex: 0 0 auto; }
 .answer-item.found { color: var(--ink); user-select: auto; }
